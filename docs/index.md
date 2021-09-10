@@ -1,5 +1,12 @@
 ## Welcome to Juggernaut Tech Pages
 
+### Explaining the Juggernaut Ecosystem
+
+![juggernaut-ecosystem](https://user-images.githubusercontent.com/84578353/132855033-8ec82bf8-e91b-4d83-8feb-0a37fe657e67.jpeg)
+
+### Running the Juggernaut Ecosystem
+
+
 You can use the [editor on GitHub](https://github.com/juggernaut-tech/juggernaut-tech.github.io/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
 
 Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
