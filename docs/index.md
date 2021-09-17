@@ -4,6 +4,29 @@
 
 ![juggernaut-ecosystem](https://user-images.githubusercontent.com/84578353/133796401-23f4074a-dbcf-44c7-a894-f14ad6bad59d.jpeg)
 
+## Prerequisites for Running and Developing the Juggernaut Ecosystem
+
+There are two java libraries that must be built and installed on your local maven repository.
+
+The core eventing models provide the event classes that are serialized across the Juggernaut eventing subsystem
+
+```markdown
+Start a Git Bash 
+cd to your develop directory
+clone the [Core Eventing Models Git Repo](https://github.com/juggernaut-tech/core-eventing-models.git), or update existing repo if already cloned
+build the artifact (can be imported into IntelliJ as new project or built on command line)
+```
+![Core-eventing-models-build](https://user-images.githubusercontent.com/84578353/133824313-d60f6caf-3200-4e4f-9f83-79ec2792bc6e.PNG)
+
+The core eventing fabric provides helper classes for eventing producers and consumers
+```markdown
+Start a Git Bash 
+cd to your develop directory
+clone the [Core Eventing Fabric Git Repo](https://github.com/juggernaut-tech/core-eventing-fabric.git), or update existing repo if already cloned
+build the artifact (can be imported into IntelliJ as new project or built on command line)
+```
+![image](https://user-images.githubusercontent.com/84578353/133824448-7c963870-2773-4ed8-ac8d-0b593092cb4c.png)
+
 ## Running the Juggernaut Ecosystem
 
 The event hub component connects the clients to the Juggernaut services using kafka topics.  The event hub is scalable and fault tolerant.  Multiple instances of the event hub can be started to provide both scalability and automatic failover.  The services may be standard services or bespoke services developed by clients and/or third parties.  For example, the User Service is a standard service that is provided as part of the Juggernaut ecosystem and, a Picking service could be developed by the client or third-party and plugged into the ecosystem easily.  The Data Layer will consist of one or more microservices that provide that data abstraction and persistence for the Juggernaut application.  The data microservices are best developed as REST services and are called only by the Juggernaut services using a request/reply paradigm.
