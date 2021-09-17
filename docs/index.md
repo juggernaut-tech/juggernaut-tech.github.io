@@ -1,4 +1,4 @@
-## Welcome to Juggernaut Tech Pages
+## Welcome to Juggernaut Tech Pages for Developers
 
 ### Explaining the Juggernaut Ecosystem
 
