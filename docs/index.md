@@ -1,11 +1,23 @@
-## Welcome to Juggernaut Tech Pages for Developers
+# Welcome to Juggernaut Tech Pages for Developers
 
-### Explaining the Juggernaut Ecosystem
+## Explaining the Juggernaut Ecosystem
 
-![juggernaut-ecosystem](https://user-images.githubusercontent.com/84578353/132855033-8ec82bf8-e91b-4d83-8feb-0a37fe657e67.jpeg)
+![juggernaut-ecosystem](https://user-images.githubusercontent.com/84578353/133796401-23f4074a-dbcf-44c7-a894-f14ad6bad59d.jpeg)
 
-### Running the Juggernaut Ecosystem
 
+## Running the Juggernaut Ecosystem
+
+### Start Zookeeper for the Event Hub
+
+```markdown
+
+Start Command Prompt
+Change Directory to your kafka 2.13 scala 2.7.1 distribution
+Start the zookeeper instance
+
+
+
+```
 
 You can use the [editor on GitHub](https://github.com/juggernaut-tech/juggernaut-tech.github.io/edit/master/docs/index.md) to maintain and preview the content for your website in Markdown files.
 
