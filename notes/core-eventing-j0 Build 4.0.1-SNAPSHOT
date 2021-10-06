@@ -1,0 +1,108 @@
+1. Shutdown juggernaut ecosystem, reset & restart fabric
+kill event-hub
+kill user-service
+kill <any other services running>
+kill <all clients connecting to event-hub>
+kill kafka-server
+kill zookeeper
+rm -fr <your-kafka-distro-home>/tmp/kafka-logs/
+rm -fr <your-kafka-distro-home>/tmp/zookeeper/
+start zookeeper
+start kafka-server
+
+2. Enable event-hub for load balancing and failover
+cmd
+cd <your-kafka-distro-home>\bin\windows
+> kafka-topics.bat --create --bootstrap-server localhost:9092 --partitions 2 --topic j0-event-hub
+# this ^ will create the event hub consumer topic with 2 partitions,
+# can see the partitions as below:
+> kafka-topics.bat --describe --bootstrap-server localhost:9092  --topic j0-event-hub
+Topic: j0-event-hub     PartitionCount: 2       ReplicationFactor: 1    Configs: segment.bytes=1073741824
+        Topic: j0-event-hub     Partition: 0    Leader: 0       Replicas: 0     Isr: 0
+        Topic: j0-event-hub     Partition: 1    Leader: 0       Replicas: 0     Isr: 0
+		
+3. core-eventing-j0
+gup (git pull --ff-only origin)
+mvn -U clean install
+#
+# this ^ builds new library into your maven repository: 4.0.1-SNAPSHOT
+#
+
+4. new-test-service
+gup (git pull --ff-only origin)
+mvn -U clean install
+#
+# this ^ builds service into your maven repository: 4.0.0-SNAPSHOT
+# using core-eventing-j0 version: 4.0.1-SNAPSHOT
+#
+mvn spring-boot:run
+
+5. event-hub
+gup (git pull --ff-only origin)
+mvn -U clean install
+#
+# version: 4.0.0-SNAPSHOT
+# core-eventing-models version: 4.0.0-SNAPSHOT
+# New configuration in event mappings to define broadcast topic
+# Optional and is specified for any event that wants to its response to be broadcast by the implementing service
+ juggernaut:
+   event-mappings:
++    test:
++      forwardTopic: j0-new-test-service
++      broadcastTopic: j0-test-service-broadcast
+#
+mvn spring-boot:run
+# this will run a single consumer instance which will be assigned both topic partitions
+# you can see this in the final log message after startup:
+[...] o.s.k.l.KafkaMessageListenerContainer    : j0-event-hub-group: partitions assigned: [j0-event-hub-0, j0-event-hub-1]
+#
+# to run another instance of event hub use:
+#
+java -jar target/event-hub-4.0.0-SNAPSHOT.jar --server.port=9092
+# this will cause kafka to repartition the topic across the two consumer processes running
+# you can see this in the last log message of both the first consumer started and this latest one:
+# THE FIRST CONSUMER GETS REPARTITIONED TO j0-event-hub-1 AND LOSES j0-event-hub-0
+[...] o.s.k.l.KafkaMessageListenerContainer    : j0-event-hub-group: partitions assigned: [j0-event-hub-1]
+# THE SECOND CONSUMER GETS PARTITIONED TO j0-event-hub-0
+[...] o.s.k.l.KafkaMessageListenerContainer    : j0-event-hub-group: partitions assigned: [j0-event-hub-0]
+#
+# Now the two consumers are load balanced and will process events together in an interleaved way
+#
+# For failover scenarios, simply startup new instances of event-hub (with unique server.port settings), 
+# and the topic will get repartitioned automatically so that there will always be two consumer load balancing 
+# with all other consumers queued until a partition becomes available, i.e. one of the active consumer terminates.
+ 
+6. demo-eventing-client
+gup (git pull --ff-only origin)
+mvn -U clean install
+#
+# version: 4.0.0-SNAPSHOT
+# core-eventing-j0 version: 4.0.1-SNAPSHOT
+# consumer topic can now be delimited list of topics
+     consumer:
+-      topic: j0-demo-eventing-client
++      topic: j0-demo-eventing-client,j0-test-service-broadcast
+       auto-offset-reset:  latest
+#
+mvn spring-boot:run
+
+7. demo-dashboard
+gup (git pull --ff-only origin)
+mvn -U clean install
+#
+# version: 4.0.0-SNAPSHOT
+# core-eventing-j0 version: 4.0.1-SNAPSHOT
+# consumer topic can now be delimited list of topics
+     consumer:
+-      topic: j0-demo-eventing-client
++      topic: j0-demo-eventing-client,j0-test-service-broadcast
+       auto-offset-reset:  latest
+#
+mvn spring-boot:run
+
+curl -X POST "localhost:8082/fire?event=test"
+
+SHOULD SEE RESPONSE IN BOTH CLIENTS.  
+NOTE: demo-eventing-client will receive response twice: once from its own consumer queue and then again from its broadcast queue
+
+		

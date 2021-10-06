@@ -1,0 +1,49 @@
+0. Shutdown juggernaut ecosystem, reset & restart fabric
+kill event-hub
+kill user-service
+kill <any other services running>
+kill <all clients connecting to event-hub>
+kill kafka-server
+kill zookeeper
+rm -fr <your-kafka-distro-home>/tmp/kafka-logs/
+rm -fr <your-kafka-distro-home>/tmp/zookeeper/
+start zookeeper
+start kafka-server
+
+1. core-eventing-models
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 2.0.0-SNAPSHOT
+
+2. core-eventing-fabric
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 1.0.1-SNAPSHOT
+
+3. user-service
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 1.0.1-SNAPSHOT, using models 2.0.0-SNAPSHOT
+mvn spring-boot:run
+
+3. event-hub
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 1.0.1-SNAPSHOT, using models 2.0.0-SNAPSHOT
+mvn spring-boot:run
+
+4. demo-rest-client
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 1.0.1-SNAPSHOT, using models 2.0.0-SNAPSHOT and fabric 1.0.1-SNAPSHOT
+mvn spring-boot:run
+
+X. CLIENT CHANGES 
+Handler classes invoked from kafak events derive from EventHubHandler and receive a ClientEventService as arg in apply()
+- see examples in demo-rest-client: ActionsHandler; LoginHandler; LogoutHandler
+New ClientEventService is now implemented which gets passed between clients, event-hub and services.  This applies the event to local services.
+- see DefaultHandler as example in demo-rest-client
+- NOTE: the @Component specifies the name of the Bean for the ClientEventService - this must be specified as used below
+Application class now extends BaseClientApplication which is used to link your service to the event hub proxy
+- see DemoRestClientApplication main() method for usage
+

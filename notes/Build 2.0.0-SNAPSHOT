@@ -1,0 +1,113 @@
+1. Shutdown juggernaut ecosystem, reset & restart fabric
+kill event-hub
+kill user-service
+kill <any other services running>
+kill <all clients connecting to event-hub>
+kill kafka-server
+kill zookeeper
+rm -fr <your-kafka-distro-home>/tmp/kafka-logs/
+rm -fr <your-kafka-distro-home>/tmp/zookeeper/
+start zookeeper
+start kafka-server
+
+2. core-eventing-j0
+git clone https://github.com/juggernaut-tech/core-eventing-j0.git
+mvn -U clean install
+# this ^ builds new library into your maven repository: 2.0.0-SNAPSHOT
+# the library replaces core-eventing-fabric and provides common consumer, producer classes for eventing and worker pools
+
+3. user-service
+# no changes to this service - it uses the old framework
+mvn spring-boot:run
+
+4. test-service
+git clone https://github.com/juggernaut-tech/test-service.git
+mvn -U clean install
+# this ^ builds new service into your maven repository: 2.0.0-SNAPSHOT
+mvn spring-boot:run
+
+X. SERVICE CHANGES TO MIGRATE FROM OLD TO NEW FRAMEWROK
+modified:   pom.xml
+	- replace core-eventing-models dependency with: 
+    <dependency>
+      <groupId>com.juggernaut.tech.core</groupId>
+      <artifactId>core-eventing-j0</artifactId>
+      <version>2.0.0-SNAPSHOT</version>
+    </dependency>
+modified:   src/main/java/com/juggernaut/tech/services/App.java
+	- extends from BaseJ0Application and calls run from main()
+new file:   src/main/java/com/juggernaut/tech/services/Service.java
+	- the (named) service implements the specifics and returns Event as response
+deleted:   src/main/java/com/juggernaut/tech/services/eventing/Consumer.java
+	- deprecated by core-eventing-j0
+deleted:   src/main/java/com/juggernaut/tech/services/eventing/ConsumerProxy.java
+	- deprecated by core-eventing-j0
+deleted:   src/main/java/com/juggernaut/tech/services/eventing/Producer.java
+	- deprecated by core-eventing-j0
+deleted:   src/main/java/com/juggernaut/tech/services/eventing/ThreadPool.java
+	- deprecated by core-eventing-j0
+modified:   src/main/java/com/juggernaut/tech/services/handlers/TestHandler.java
+	- extends ServiceEventHandler
+	- onEvent() is Overloaded now from base
+	- gets the service bean from the context and delegates to it
+	- return response Event
+modified:   src/main/java/resources/application.yml
+	- adds spring.kafka.producer.topic
+	- adds juggernaut.user-id
+
+5. event-hub
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# builds new version: 2.0.0-SNAPSHOT
+mvn spring-boot:run
+
+Changes:
+        modified:   pom.xml
+		- bumps version of artifact
+        modified:   src/main/resources/application.yml
+		- switches the test event from j0-rich-service to be j0-test-service
+
+6. demo-eventing-client
+# new client using j0 framework
+git clone https://github.com/juggernaut-tech/demo-eventing-client.git
+mvn -U clean install
+# this ^ builds new service into your maven repository, version: 0.0.1-SNAPSHOT
+mvn spring-boot:run
+
+X. CLIENT CHANGES TO MIGRATE FROM OLD TO NEW SERVICE FRAMEWORK
+modified:   pom.xml
+	- replace core-eventing-* dependencies with single: core-eventing-j0
+	- remove devtools dependency
+modified:   application.yml
+	- adds spring.kafka.task config
+	- adds juggernaut.event-mappings.test config
+modified:   src/main/java/com/juggernaut/user/demoeventingclient/DemoEventingClientApplication.java
+	- call BaseJ0Application.run() in main()
+modified:   src/main/java/com/juggernaut/user/demoeventingclient/ClientConfig.java
+	- simplify by just @Autowired HubGateway
+modified:   src/main/java/com/juggernaut/user/demoeventingclient/ClientService.java
+	- new @Service bean that can be accessed by the handlers from application context
+	- the service implements the specifics
+	- methods should not return anything for clients
+modified:   src/main/java/com/juggernaut/user/demoeventingclient/handlers/ActionsEventHandler.java
+	- extends ClientEventHandler
+	- Overrides onEvent()
+	- gets the service bean from the context and delegates to it
+modified:    src/main/java/com/juggernaut/user/demoeventingclient/handlers/TestEventHandler.java
+	- extends ClientEventHandler
+	- Overrides onEvent()
+	- gets the service bean from the context and delegates to it
+modified:   src/main/java/com/juggernaut/user/demoeventingclient/handlers/LoginEventHandler.java
+	- extends ClientEventHandler
+	- Overrides onEvent()
+	- gets the service bean from the context and delegates to it
+modified:   src/main/java/com/juggernaut/user/demoeventingclient/handlers/LogoutEventHandler.java
+	- extends ClientEventHandler
+	- Overrides onEvent()
+	- gets the service bean from the context and delegates to it
+modified:   src/main/resources/application.properties
+	- removes all previous settings
+	
+7. curl -X POST localhost:8082/fire?event=test
+
+NOTE: the login, logout and actions events will not fire in this service as they are configured in the event-hub to delegate to the user-service

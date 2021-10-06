@@ -1,0 +1,76 @@
+1. Shutdown juggernaut ecosystem, reset & restart fabric
+kill event-hub
+kill user-service
+kill <any other services running>
+kill <all clients connecting to event-hub>
+kill kafka-server
+kill zookeeper
+rm -fr <your-kafka-distro-home>/tmp/kafka-logs/
+rm -fr <your-kafka-distro-home>/tmp/zookeeper/
+start zookeeper
+start kafka-server
+
+2. core-eventing-fabric
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 2.0.0-SNAPSHOT
+
+3. user-service
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 1.0.1-SNAPSHOT, using models 2.0.0-SNAPSHOT
+mvn spring-boot:run
+
+X. SERVICE CHANGES 
+modified:   pom.xml
+	- bump version to 2.0.0-SNAPSHOT
+modified:   src/main/java/com/juggernaut/tech/userservice/UserServiceApplication.java
+	- attaches the application context to the event worker thread pool
+new file:   src/main/java/com/juggernaut/tech/userservice/UserServiceService.java
+	- new @Service bean that can be accessed by the handlers from application context
+	- the service implements the specifics
+modified:   src/main/java/com/juggernaut/tech/userservice/eventing/ConsumerProxy.java
+	- adds the application context to apply calls
+modified:   src/main/java/com/juggernaut/tech/userservice/eventing/ThreadPool.java
+	- adds the application context as member which is passed to the dynamic handlers
+	- applyEvent() uses the application context now
+modified:   src/main/java/com/juggernaut/tech/userservice/handlers/ActionsHandler.java
+	- gets the service bean from the context and delegates to it
+modified:   src/main/java/com/juggernaut/tech/userservice/handlers/LoginHandler.java
+	- gets the service bean from the context and delegates to it
+modified:   src/main/java/com/juggernaut/tech/userservice/handlers/LogoutHandler.java
+	- gets the service bean from the context and delegates to it
+
+4. event-hub
+mvn spring-boot:run
+
+5. demo-rest-client
+git pull --ff-only origin	# (gup)
+mvn -U clean install
+# this ^ builds new version into your maven repository: 1.0.1-SNAPSHOT, using models 2.0.0-SNAPSHOT and fabric 1.0.1-SNAPSHOT
+mvn spring-boot:run
+
+X. CLIENT CHANGES 
+modified:   pom.xml
+	- bump version to 2.0.0-SNAPSHOT
+	- uses core-eventing-fabric 2.0.0-SNAPSHOT
+	- remove devtools
+modified:   src/main/java/com/juggernaut/user/demorestclient/DemoRestClientApplication.java
+	- remove DefaultHandler: deprecated
+modified:   src/main/java/com/juggernaut/user/demorestclient/DemoRestClientConfig.java
+	- remove DefaultHandler: deprecated
+new file:   src/main/java/com/juggernaut/user/demorestclient/DemoRestClientService.java
+	- new @Service bean that can be accessed by the handlers from application context
+	- the service implements the specifics
+modified:   src/main/java/com/juggernaut/user/demorestclient/handlers/ActionsHandler.java
+	- gets the service bean from the context and delegates to it
+deleted:    src/main/java/com/juggernaut/user/demorestclient/handlers/DefaultHandler.java
+	- deprecated
+modified:   src/main/java/com/juggernaut/user/demorestclient/handlers/LoginHandler.java
+	- gets the service bean from the context and delegates to it
+modified:   src/main/java/com/juggernaut/user/demorestclient/handlers/LogoutHandler.java
+	- gets the service bean from the context and delegates to it
+modified:   src/main/resources/application.properties
+	- disables devtools restart capability
+	- can cause cast issues in the kafka event thread
+	
